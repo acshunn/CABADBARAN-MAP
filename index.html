@@ -61,6 +61,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mk.sel .icon::after{content:"";position:absolute;inset:calc(-9px*var(--inv));border-radius:50%;border:3px solid var(--sun);animation:pulse 1.6s ease-out infinite;pointer-events:none}
 @keyframes pulse{0%{transform:scale(.8);opacity:.95}100%{transform:scale(1.55);opacity:0}}
 .mk.focus .part{outline:3px solid #fff;outline-offset:2px}
+.ico{position:absolute;inset:-3px;border-radius:50%;background:var(--ic);border:3px solid #fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:transform .2s,opacity .2s;pointer-events:none}
+.ico svg{width:58%;height:58%;display:block}
+.mk:hover .ico,.mk.focus .ico,.mk.sel .ico{transform:scale(1.14);box-shadow:0 0 0 3px var(--sun),0 4px 12px rgba(0,0,0,.45)}
+.mk.dim .ico,.mk.gone .ico{opacity:.35}
 .mk.dim .part{background:rgba(236,244,236,.58)}
 .mk.dim .mag{display:none}
 .mk.gone .part{background:rgba(226,238,228,.93);pointer-events:none}
@@ -107,10 +111,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 #legend{position:absolute;z-index:22;left:var(--lg-left,12px);top:var(--lg-top,70px);width:var(--lg-w,260px);height:var(--lg-h,calc(100% - 84px));
   transform:translate3d(calc(-100% - var(--lg-left,12px) - 2px),0,0);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
 #legend.open{transform:none}
-#legend .panel{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;border-radius:var(--r);background:var(--glass-strong);border:1px solid var(--line);box-shadow:0 10px 36px rgba(7,28,20,.3);visibility:hidden;transition:visibility 0s .3s}
+#legend .panel{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;border-radius:var(--r);background:rgba(247,251,244,.74);-webkit-backdrop-filter:blur(12px) saturate(1.3);backdrop-filter:blur(12px) saturate(1.3);border:1px solid rgba(255,255,255,.6);box-shadow:0 10px 36px rgba(7,28,20,.28);visibility:hidden;transition:visibility 0s .3s}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #legend .panel{background:rgba(13,32,26,.7);border-color:rgba(255,255,255,.18)}}
+#app.moving #legend .panel{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(247,251,244,.9)}
 #legend.open .panel{visibility:visible;transition:visibility 0s}
 .legtab{position:absolute;left:100%;top:50%;margin:-60px 0 0;width:34px;height:120px;padding:0;border:1px solid var(--line);border-left:0;border-radius:0 14px 14px 0;background:var(--glass-strong);color:var(--brand);
-  box-shadow:6px 6px 18px rgba(7,28,20,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+  box-shadow:6px 6px 18px rgba(7,28,20,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:.94}
 .legtab span{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:800;font-size:12px;letter-spacing:.16em}
 .legtab svg{width:16px;height:16px;transition:transform .3s}
 #legend.open .legtab svg{transform:rotate(180deg)}
@@ -482,11 +488,11 @@ const BR={
  antonioluna:["ANTONIO LUNA","Antonio Luna is an officially recognized barangay of Cabadbaran City.","The name resembles that of Philippine historical figure General Antonio Luna, but the connection between the historical figure and the barangay's naming has not been verified here.",P(0,0,0,[1033,910,138,22]),[]],
  bayang:["BAY-ANG","Bay-ang is an officially recognized barangay of Cabadbaran City.","It is one of the communities within the city's jurisdiction. Its individual history is not described in the supplied map.",P(0,0,0,[1267,929,80,22]),[]],
  calamba:["CALAMBA","Calamba is an officially recognized barangay of Cabadbaran City.","It forms part of the city's local administrative structure. A specific account of the barangay's historical development was not verified.",P(0,0,0,[1114,832,100,22]),[]],
- mahaba:["MAHABA","Mahaba is an officially recognized barangay of Cabadbaran City.","Mahaba is associated with the city's mountainous landscape and is the location of Sumag-a Falls, a natural attraction described by the city government.",P(1243,769,25,[1272,763,92,24]),["cityg"]]
+ mahaba:["MAHABA","Mahaba is an officially recognized barangay of Cabadbaran City.","Mahaba is associated with the city's mountainous landscape and is the location of Sumag-a Falls, a natural attraction described by the city government.",Object.assign(P(1243,769,25,[1272,763,92,24]),{override:true}),["cityg"]]
 };
 Object.entries(BR).forEach(([id,[nm,ov,bg,pos,src]])=>LOCATIONS.push({id,name:nm,cat:"barangay",pos,keywords:["barangay","local area"],type:"Barangay",locText:"Cabadbaran City",
   overview:ov,background:bg,sources:S("psa",...src),
-  flags:id==="mahaba"?["The map draws an attractions-style icon beside MAHABA, which is listed as a barangay."]:[],
+  flags:[],
   important:id==="mahaba"?"Sumag-a Falls is not labelled on this map, so it is not added as a map location.":"",
   statusNote:"Barangay name confirmed by the PSA listing."}));
 /* ================= PUBLIC FACILITIES AND LANDMARKS ================= */
@@ -561,7 +567,7 @@ const state = {sel:null, filter:{kind:"all",id:null}, fadeMode:"fade", legendOpe
    InteractiveMap : pan / zoom engine for the image-based map
    ===================================================================== */
 const vp=$("#viewport"), stage=$("#stage"), app=$("#app");
-let vw=0, vh=0, minS=.3, maxS=2.4, view={x:0,y:0,s:1}, anim=null, raf=0, atFit=true, ready=false, movingT=0, lg={left:12,w:260}, infoPx=null;
+let vw=0, vh=0, minS=.3, maxS=2.4, view={x:0,y:0,s:1}, anim=null, raf=0, atFit=true, ready=false, movingT=0, lg={left:12,w:260}, infoPx=null, reserveL=0;
 const LEGEND_BOX=[17,130,242,835];            // where the legend printed on the picture sits (picture pixels)
 const zinB=$("#zin"), zoutB=$("#zout"); let disIn=null, disOut=null;
 function markMoving(ms=220){ if(!app.classList.contains("moving")) app.classList.add("moving"); clearTimeout(movingT); movingT=setTimeout(()=>app.classList.remove("moving"),ms); }
@@ -575,13 +581,13 @@ const ease = t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 const fitTop=()=>topInset()-8;
 function measure(){
   vw=vp.clientWidth; vh=vp.clientHeight;
-  const availH=vh-fitTop()-8;
-  minS=Math.min(vw/MAP_W,availH/MAP_H);
+  const availH=vh-fitTop()-8, availW=vw-reserveL-12;
+  minS=Math.min(availW/MAP_W,availH/MAP_H);
   maxS=Math.max(minS*2.4,2.4);
 }
 function clampView(v){
-  const ws=MAP_W*v.s, hs=MAP_H*v.s, top=fitTop(), availH=vh-top-8;
-  v.x = ws<=vw ? (vw-ws)/2 : Math.min(0,Math.max(vw-ws,v.x));
+  const ws=MAP_W*v.s, hs=MAP_H*v.s, top=fitTop(), availH=vh-top-8, availW=vw-reserveL-12;
+  v.x = ws<=availW ? reserveL+(availW-ws)/2 : Math.min(reserveL,Math.max(vw-ws,v.x));
   v.y = hs<=availH ? top+(availH-hs)/2 : Math.min(0,Math.max(vh-hs,v.y));
   return v;
 }
@@ -726,10 +732,10 @@ let roRaf=0;
 function onResize(){
   if(!ready) return;
   const c={x:(vw/2-view.x)/view.s,y:(vh/2-view.y)/view.s}, was=atFit;
-  measure();
+  measure(); placeLegend(); reserveL=calcReserve(); measure();
   if(was) setView(homeView());
   else { const s=Math.min(maxS,Math.max(minS,view.s)); setView({s,x:vw/2-c.x*s,y:vh/2-c.y*s}); }
-  placeLegend(); layoutInfo();
+  layoutInfo();
 }
 new ResizeObserver(()=>{ cancelAnimationFrame(roRaf); roRaf=requestAnimationFrame(onResize); }).observe(vp);
 document.addEventListener("visibilitychange",()=>app.classList.toggle("paused",document.hidden));
@@ -748,7 +754,7 @@ function buildMarkers(){
     el.className="mk"; el.dataset.id=loc.id; el.tabIndex=0; el.setAttribute("role","button");
     el.setAttribute("aria-label",`${loc.name}, ${c.label}. Press Enter for details.`);
     const iconPart=!p.r?"":`<span class="part icon" style="left:${p.cx-p.r}px;top:${p.cy-p.r}px;width:${p.r*2}px;height:${p.r*2}px">
-      <i class="mag" style="left:${p.r-R}px;top:${p.r-R}px;width:${R*2}px;height:${R*2}px;background-size:${MAP_W*MAG}px ${MAP_H*MAG}px;background-position:${R-p.cx*MAG}px ${R-p.cy*MAG}px"></i></span>`;
+      ${p.override?`<b class="ico" style="--ic:${c.color}">${c.glyph}</b>`:`<i class="mag" style="left:${p.r-R}px;top:${p.r-R}px;width:${R*2}px;height:${R*2}px;background-size:${MAP_W*MAG}px ${MAP_H*MAG}px;background-position:${R-p.cx*MAG}px ${R-p.cy*MAG}px"></i>`}</span>`;
     const lbl=p.label?`<span class="part lbl" style="left:${p.label[0]}px;top:${p.label[1]}px;width:${p.label[2]}px;height:${p.label[3]}px"></span>`:"";
     el.innerHTML=iconPart+lbl;
     el.addEventListener("click",()=>{ if(moved) return; selectLoc(loc.id); });
@@ -798,7 +804,7 @@ function renderInfo(loc){
   const body=[];
   if(placed){
     const cc=centerOf(loc);
-    body.push(`<figure class="thumb" style="margin-left:0;margin-right:0" aria-hidden="true"><div class="im" style="transform:translate(${-cc.x*1.5}px,${-cc.y*1.5}px)"></div><figcaption>Detail from the primary map</figcaption></figure>`);
+    body.push(`<figure class="thumb" style="margin-left:0;margin-right:0" aria-hidden="true"><div class="im" style="transform:translate(${-cc.x*1.5}px,${-cc.y*1.5}px)"></div>${loc.pos.override?`<b class="ico" style="--ic:${catOf(loc.cat).color};inset:auto;width:${(loc.pos.r+2)*3}px;height:${(loc.pos.r+2)*3}px;left:calc(50% + ${(loc.pos.cx-cc.x)*1.5-(loc.pos.r+2)*1.5}px);top:calc(50% + ${(loc.pos.cy-cc.y)*1.5-(loc.pos.r+2)*1.5}px)">${catOf(loc.cat).glyph}</b>`:""}<figcaption>Detail from the primary map</figcaption></figure>`);
   }else{
     body.push(`<div class="notice na"><b>Not placed on the map.</b> ${esc(loc.placeNote||"Its position could not be verified.")}</div>`);
   }
@@ -900,25 +906,35 @@ function setFilter(kind,id,fly){
     if(kind==="all") resetView(); else { const pl=list.filter(l=>l.pos); if(pl.length) flyToBounds(pl); }
   }
 }
-/* The legend is its own layer: it slides in from the left, is opaque, and never touches the map's transform.
-   On desktop it sits over the legend printed on the picture (projected through the default view); the same area of
-   the picture is also painted over with sky while the panel is open, so the printed legend never shows through. */
+/* The legend is its own layer: it slides in from the left edge, is semi-transparent, and on wide screens the map
+   docks beside it instead of sliding underneath (the printed legend area is painted over with sky while it is open). */
 function placeLegend(){
   if(isDrawer()){
     ["--lg-left","--lg-top","--lg-w","--lg-h"].forEach(p=>legend.style.removeProperty(p));
     lg={left:0,w:Math.min(vw*(isMobile()?.8:.78), isMobile()?320:300)};
     return;
   }
-  const h=homeView(), B=LEGEND_BOX, sx=h.x+B[0]*h.s, sy=h.y+B[1]*h.s, sw=B[2]*h.s, sh=B[3]*h.s;
-  const w=Math.min(320,Math.max(236,sw+12)), left=Math.max(12,sx-6), top=Math.max(64,sy-4), height=Math.min(vh-top-12,Math.max(sh+8,520));
-  legend.style.setProperty("--lg-left",left+"px"); legend.style.setProperty("--lg-top",top+"px");
-  legend.style.setProperty("--lg-w",w+"px"); legend.style.setProperty("--lg-h",height+"px");
-  lg={left,w};
+  const w=vw<1280?248:276, top=70;
+  legend.style.setProperty("--lg-left","12px"); legend.style.setProperty("--lg-top",top+"px");
+  legend.style.setProperty("--lg-w",w+"px"); legend.style.setProperty("--lg-h",(vh-top-12)+"px");
+  lg={left:12,w};
+}
+const calcReserve=()=>(state.legendOpen&&vw>=1100)?lg.left+lg.w+14:0;
+function setLegendLayout(){
+  const nl=calcReserve(); if(nl===reserveL) return;
+  const wasL=reserveL, wasHome=view.s<=minS+.002;
+  const cy=fitTop()+(vh-fitTop()-8)/2, oldCx=wasL+(vw-wasL-12)/2;
+  const c={x:(oldCx-view.x)/view.s,y:(cy-view.y)/view.s};
+  reserveL=nl; measure();
+  const newCx=reserveL+(vw-reserveL-12)/2;
+  if(wasHome){ flyTo(MAP_W/2,MAP_H/2,minS,newCx,cy); atFit=true; }
+  else flyTo(c.x,c.y,Math.min(maxS,Math.max(minS,view.s)),newCx,cy);
 }
 function toggleLegend(open,quiet){
   state.legendOpen = open===undefined ? !state.legendOpen : open;
   if(state.legendOpen && isMobile()) toggleCity(false);
   if(state.legendOpen) placeLegend();
+  setLegendLayout();
   legend.classList.toggle("open",state.legendOpen);
   $("#legPanel").inert=!state.legendOpen;
   $("#btnLegend").setAttribute("aria-expanded",state.legendOpen);
